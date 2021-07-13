@@ -57,11 +57,12 @@ public abstract class TypeReferencePage extends HyperlinkPage {
                 String highlightPattern = parameters.get("highlightPattern");
 
                 if ((highlightFlags != null) && (highlightPattern != null)) {
-                    String regexp = createRegExp(highlightPattern);
+                    // String regexp = createRegExp(highlightPattern);
+                    Pattern pattern = Pattern.compile(highlightPattern,highlightPattern.indexOf("X")!=-1? Pattern.CASE_INSENSITIVE:0);
 
                     if (highlightFlags.indexOf('s') != -1) {
                         // Highlight strings
-                        Pattern pattern = Pattern.compile(regexp);
+                        // Pattern pattern = Pattern.compile(regexp);
                         Matcher matcher = pattern.matcher(textArea.getText());
 
                         while (matcher.find()) {
@@ -71,7 +72,7 @@ public abstract class TypeReferencePage extends HyperlinkPage {
 
                     if ((highlightFlags.indexOf('t') != -1) && (highlightFlags.indexOf('r') != -1)) {
                         // Highlight type references
-                        Pattern pattern = Pattern.compile(regexp + ".*");
+                        // Pattern pattern = Pattern.compile(regexp + ".*");
 
                         for (Map.Entry<Integer, HyperlinkData> entry : hyperlinks.entrySet()) {
                             TypeHyperlinkData hyperlink = (TypeHyperlinkData)entry.getValue();

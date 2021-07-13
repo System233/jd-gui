@@ -363,6 +363,13 @@ public class MainView<T extends JComponent & UriGettable> implements UriOpenable
         });
     }
 
+    public void setFindBackgroundColor(boolean wasFound,String message) {
+        invokeLater(() -> {
+            findComboBox.getEditor().getEditorComponent().setBackground(wasFound ? findBackgroundColor : findErrorBackgroundColor);
+            findComboBox.setToolTipText(message);
+        });
+    }
+
     public <T extends JComponent & UriGettable> void addMainPanel(String title, Icon icon, String tip, T component) {
         invokeLater(() -> {
             mainTabbedPanel.addPage(title, icon, tip, component);

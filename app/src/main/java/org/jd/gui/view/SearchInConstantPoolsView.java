@@ -20,10 +20,13 @@ import org.jd.gui.view.component.Tree;
 import org.jd.gui.view.renderer.TreeNodeRenderer;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeExpansionListener;
+import javax.swing.text.JTextComponent;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -32,6 +35,8 @@ import java.awt.event.*;
 import java.net.URI;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public class SearchInConstantPoolsView<T extends DefaultMutableTreeNode & ContainerEntryGettable & UriGettable> {
     protected static final ContainerComparator CONTAINER_COMPARATOR = new ContainerComparator();
@@ -44,6 +49,7 @@ public class SearchInConstantPoolsView<T extends DefaultMutableTreeNode & Contai
     public static final int SEARCH_MODULE = 32;
     public static final int SEARCH_DECLARATION = 64;
     public static final int SEARCH_REFERENCE = 128;
+    public static final int SEARCH_MATCHCASE = 256;
 
     protected API api;
     protected Set<URI> accepted = new HashSet<>();
@@ -51,6 +57,7 @@ public class SearchInConstantPoolsView<T extends DefaultMutableTreeNode & Contai
 
     protected JDialog searchInConstantPoolsDialog;
     protected JTextField searchInConstantPoolsEnterTextField;
+    protected JCheckBox searchInConstantPoolsCheckBoxMatchCase;
     protected JLabel searchInConstantPoolsLabel;
     protected JCheckBox searchInConstantPoolsCheckBoxType;
     protected JCheckBox searchInConstantPoolsCheckBoxField;
@@ -61,7 +68,7 @@ public class SearchInConstantPoolsView<T extends DefaultMutableTreeNode & Contai
     protected JCheckBox searchInConstantPoolsCheckBoxDeclarations;
     protected JCheckBox searchInConstantPoolsCheckBoxReferences;
     protected Tree searchInConstantPoolsTree;
-
+    protected String searchText="";
     @SuppressWarnings("unchecked")
     public SearchInConstantPoolsView(
             API api, JFrame mainFrame,
@@ -81,17 +88,25 @@ public class SearchInConstantPoolsView<T extends DefaultMutableTreeNode & Contai
             Box vbox = Box.createVerticalBox();
 
             Box hbox = Box.createHorizontalBox();
-            hbox.add(new JLabel("Search string (* = any string, ? = any character):"));
+            hbox.add(new JLabel("Search string (RegExp):"));
             hbox.add(Box.createHorizontalGlue());
             vbox.add(hbox);
 
             vbox.add(Box.createVerticalStrut(10));
 
             // Text field
-            vbox.add(searchInConstantPoolsEnterTextField = new JTextField(30));
+            //vbox.add(searchInConstantPoolsEnterTextField = new JTextField(30));
+            
+            hbox = Box.createHorizontalBox();
+            hbox.add(searchInConstantPoolsEnterTextField = new JTextField(30));
+            hbox.add(searchInConstantPoolsCheckBoxMatchCase=new JCheckBox("Match Case",false));
+            vbox.add(hbox);
+
+            Border defaultBorder=searchInConstantPoolsEnterTextField.getBorder();
+            Color defaultBackground=searchInConstantPoolsEnterTextField.getBackground();
             searchInConstantPoolsEnterTextField.addKeyListener(new KeyAdapter() {
                 @Override public void keyTyped(KeyEvent e)  {
-                    switch (e.getKeyChar()) {
+                    /*switch (e.getKeyChar()) {
                         case '=': case '(': case ')': case '{': case '}': case '[': case ']':
                             e.consume();
                             break;
@@ -101,9 +116,10 @@ public class SearchInConstantPoolsView<T extends DefaultMutableTreeNode & Contai
                                 e.consume();
                             }
                             break;
-                    }
+                    }*/
                 }
                 @Override public void keyPressed(KeyEvent e) {
+                    
                     if (e.getKeyCode() == KeyEvent.VK_DOWN) {
                         DefaultMutableTreeNode root = (DefaultMutableTreeNode)searchInConstantPoolsTree.getModel().getRoot();
                         if (root.getChildCount() > 0) {
@@ -120,7 +136,20 @@ public class SearchInConstantPoolsView<T extends DefaultMutableTreeNode & Contai
                 @Override public void insertUpdate(DocumentEvent e) { call(); }
                 @Override public void removeUpdate(DocumentEvent e) { call(); }
                 @Override public void changedUpdate(DocumentEvent e) { call(); }
-                protected void call() { changedPatternCallback.accept(searchInConstantPoolsEnterTextField.getText(), getFlags()); }
+                protected void call() { 
+                    try {
+                        String text=searchInConstantPoolsEnterTextField.getText();
+                        Pattern.compile(text);
+                        searchInConstantPoolsEnterTextField.setBorder(defaultBorder);
+                        searchInConstantPoolsEnterTextField.setBackground(defaultBackground);
+                        searchInConstantPoolsEnterTextField.setToolTipText(null);
+                        changedPatternCallback.accept(searchText=text, getFlags()); 
+                    } catch (PatternSyntaxException exception) {
+                        searchInConstantPoolsEnterTextField.setBorder(new LineBorder(Color.decode("#FF0000")));
+                        searchInConstantPoolsEnterTextField.setBackground(Color.decode("#FFA0A0"));
+                        searchInConstantPoolsEnterTextField.setToolTipText(exception.getLocalizedMessage());
+                    }
+                }
             });
 
             vbox.add(Box.createVerticalStrut(10));
@@ -137,9 +166,10 @@ public class SearchInConstantPoolsView<T extends DefaultMutableTreeNode & Contai
             subpanel.add(subhbox, BorderLayout.WEST);
 
             ItemListener checkBoxListener = (e) -> {
-                changedPatternCallback.accept(searchInConstantPoolsEnterTextField.getText(), getFlags());
+                changedPatternCallback.accept(getPattern(), getFlags());
                 searchInConstantPoolsEnterTextField.requestFocus();
             };
+            searchInConstantPoolsCheckBoxMatchCase.addItemListener(checkBoxListener);
 
             JPanel subsubpanel = new JPanel();
             subsubpanel.setLayout(new GridLayout(2, 1));
@@ -210,7 +240,7 @@ public class SearchInConstantPoolsView<T extends DefaultMutableTreeNode & Contai
                     if (e.getClickCount() == 2) {
                         T node = (T)searchInConstantPoolsTree.getLastSelectedPathComponent();
                         if (node != null) {
-                            selectedTypeCallback.accept(node.getUri(), searchInConstantPoolsEnterTextField.getText(), getFlags());
+                            selectedTypeCallback.accept(node.getUri(), getPattern(), getFlags());
                         }
                     }
                 }
@@ -248,7 +278,7 @@ public class SearchInConstantPoolsView<T extends DefaultMutableTreeNode & Contai
                 @Override public void actionPerformed(ActionEvent actionEvent) {
                     T selectedTreeNode = (T)searchInConstantPoolsTree.getLastSelectedPathComponent();
                     if (selectedTreeNode != null) {
-                        selectedTypeCallback.accept(selectedTreeNode.getUri(), searchInConstantPoolsEnterTextField.getText(), getFlags());
+                        selectedTypeCallback.accept(selectedTreeNode.getUri(), getPattern(), getFlags());
                     }
                 }
             };
@@ -335,7 +365,7 @@ public class SearchInConstantPoolsView<T extends DefaultMutableTreeNode & Contai
 
     public boolean isVisible() { return searchInConstantPoolsDialog.isVisible(); }
 
-    public String getPattern() { return searchInConstantPoolsEnterTextField.getText(); }
+    public String getPattern() { return searchText; }
 
     public int getFlags() {
         int flags = 0;
@@ -356,7 +386,9 @@ public class SearchInConstantPoolsView<T extends DefaultMutableTreeNode & Contai
             flags += SEARCH_DECLARATION;
         if (searchInConstantPoolsCheckBoxReferences.isSelected())
             flags += SEARCH_REFERENCE;
-
+        if(!searchInConstantPoolsCheckBoxMatchCase.isSelected()){
+            flags+=SEARCH_MATCHCASE;
+        }
         return flags;
     }
 

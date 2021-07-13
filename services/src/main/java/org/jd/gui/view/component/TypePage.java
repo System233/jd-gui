@@ -235,18 +235,19 @@ public abstract class TypePage extends CustomLineNumbersPage implements UriGetta
 
         if ((highlightFlags != null) && (highlightPattern != null)) {
             String highlightScope = parameters.get("highlightScope");
-            String regexp = createRegExp(highlightPattern);
-            Pattern pattern = Pattern.compile(regexp + ".*");
+            // String regexp = createRegExp(highlightPattern);
+            // Pattern pattern = Pattern.compile(regexp + ".*");
+            Pattern pattern = Pattern.compile(highlightPattern,highlightPattern.indexOf("X")!=-1? Pattern.CASE_INSENSITIVE:0);
 
             if (highlightFlags.indexOf('s') != -1) {
                 // Highlight strings
-                Pattern patternForString = Pattern.compile(regexp);
+                // Pattern patternForString = Pattern.compile(regexp);
+                Pattern patternForString = pattern;
 
                 for (StringData data : strings) {
                     if (matchScope(highlightScope, data.owner)) {
                         Matcher matcher = patternForString.matcher(data.text);
                         int offset = data.startPosition;
-
                         while(matcher.find()) {
                             ranges.add(new DocumentRange(offset + matcher.start(), offset + matcher.end()));
                         }
@@ -254,6 +255,7 @@ public abstract class TypePage extends CustomLineNumbersPage implements UriGetta
                 }
             }
 
+            boolean s = (highlightFlags.indexOf('s') != -1); // Highlight types
             boolean t = (highlightFlags.indexOf('t') != -1); // Highlight types
             boolean f = (highlightFlags.indexOf('f') != -1); // Highlight fields
             boolean m = (highlightFlags.indexOf('m') != -1); // Highlight methods
@@ -270,6 +272,9 @@ public abstract class TypePage extends CustomLineNumbersPage implements UriGetta
                         }
                         if ((f && declaration.isAField()) || (m && declaration.isAMethod())) {
                             matchAndAddDocumentRange(pattern, declaration.name, declaration.startPosition, declaration.endPosition, ranges);
+                        }
+                        if ((s && declaration.isAField())) {
+                            findAndAddDocumentRange(pattern, declaration.name, declaration.startPosition, declaration.endPosition, ranges);
                         }
                     }
                 }
@@ -304,6 +309,11 @@ public abstract class TypePage extends CustomLineNumbersPage implements UriGetta
 
     public static void matchAndAddDocumentRange(Pattern pattern, String text, int start, int end, List<DocumentRange> ranges) {
         if (pattern.matcher(text).matches()) {
+            ranges.add(new DocumentRange(start, end));
+        }
+    }
+    public static void findAndAddDocumentRange(Pattern pattern, String text, int start, int end, List<DocumentRange> ranges) {
+        if (pattern.matcher(text).find()) {
             ranges.add(new DocumentRange(start, end));
         }
     }

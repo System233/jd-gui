@@ -52,6 +52,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public class MainController implements API {
     protected Configuration configuration;
@@ -304,10 +306,14 @@ public class MainController implements API {
             mainView.showFindPanel();
         }
     }
-
     protected void onFindCriteriaChanged() {
         if (currentPage instanceof ContentSearchable) {
-            mainView.setFindBackgroundColor(((ContentSearchable)currentPage).highlightText(mainView.getFindText(), mainView.getFindCaseSensitive()));
+            try {
+                Pattern.compile(mainView.getFindText());
+                mainView.setFindBackgroundColor(((ContentSearchable)currentPage).highlightText(mainView.getFindText(), mainView.getFindCaseSensitive()),null);
+            } catch (PatternSyntaxException e) {
+                mainView.setFindBackgroundColor(false,e.getMessage());
+            }
         }
     }
 
