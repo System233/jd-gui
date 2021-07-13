@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -259,7 +260,7 @@ public class AbstractTextPage extends JPanel implements LineNumberNavigable, Con
             textArea.setMarkAllHighlightColor(SEARCH_HIGHLIGHT_COLOR);
             textArea.setCaretPosition(textArea.getSelectionStart());
 
-            SearchContext context = newSearchContext(text, caseSensitive, false, true, false);
+            SearchContext context = newSearchContext(text, caseSensitive, false, true, true);
             SearchResult result = SearchEngine.find(textArea, context);
 
             if (!result.wasFound()) {
@@ -277,7 +278,7 @@ public class AbstractTextPage extends JPanel implements LineNumberNavigable, Con
         if (text.length() > 1) {
             textArea.setMarkAllHighlightColor(SEARCH_HIGHLIGHT_COLOR);
 
-            SearchContext context = newSearchContext(text, caseSensitive, false, true, false);
+            SearchContext context = newSearchContext(text, caseSensitive, false, true, true);
             SearchResult result = SearchEngine.find(textArea, context);
 
             if (!result.wasFound()) {
@@ -291,7 +292,7 @@ public class AbstractTextPage extends JPanel implements LineNumberNavigable, Con
         if (text.length() > 1) {
             textArea.setMarkAllHighlightColor(SEARCH_HIGHLIGHT_COLOR);
 
-            SearchContext context = newSearchContext(text, caseSensitive, false, false, false);
+            SearchContext context = newSearchContext(text, caseSensitive, false, false, true);
             SearchResult result = SearchEngine.find(textArea, context);
 
             if (!result.wasFound()) {
@@ -341,13 +342,15 @@ public class AbstractTextPage extends JPanel implements LineNumberNavigable, Con
             } else if (parameters.containsKey("highlightFlags")) {
                 String highlightFlags = parameters.get("highlightFlags");
 
-                if ((highlightFlags.indexOf('s') != -1) && parameters.containsKey("highlightPattern")) {
+                if (/*(highlightFlags.indexOf('s') != -1) && */parameters.containsKey("highlightPattern")) {
                     textArea.setMarkAllHighlightColor(SELECT_HIGHLIGHT_COLOR);
                     textArea.setCaretPosition(0);
-
+                    boolean matchCase=highlightFlags.indexOf("X")!=-1;
                     // Highlight all
-                    String searchFor = createRegExp(parameters.get("highlightPattern"));
-                    SearchContext context =  newSearchContext(searchFor, true, false, true, true);
+                    // String searchFor = createRegExp(parameters.get("highlightPattern"));
+                    // String searchFor = URLDecoder.decode(parameters.get("highlightPattern"), Charset.forName("utf-8"));
+                    String searchFor = parameters.get("highlightPattern");//URLDecoder.decode(parameters.get("highlightPattern"), Charset.forName("utf-8"));
+                    SearchContext context =  newSearchContext(searchFor, matchCase, false, true, true);
                     SearchResult result = SearchEngine.find(textArea, context);
 
                     if (result.getMatchRange() != null) {
@@ -392,6 +395,7 @@ public class AbstractTextPage extends JPanel implements LineNumberNavigable, Con
      *  '*'        matchTypeEntries 0 ou N characters
      *  '?'        matchTypeEntries 1 character
      */
+    @Deprecated
     public static String createRegExp(String pattern) {
         int patternLength = pattern.length();
         StringBuilder sbPattern = new StringBuilder(patternLength * 2);

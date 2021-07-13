@@ -157,8 +157,10 @@ public class ModuleInfoFilePage extends ClassFilePage {
             String highlightPattern = parameters.get("highlightPattern");
 
             if ((highlightFlags != null) && (highlightPattern != null)) {
-                String regexp = createRegExp(highlightPattern);
-                Pattern pattern = Pattern.compile(regexp + ".*");
+                
+                // String regexp = createRegExp(highlightPattern);
+                // Pattern pattern = Pattern.compile(regexp + ".*");
+                Pattern pattern = Pattern.compile(highlightPattern,highlightPattern.indexOf("X")!=-1? Pattern.CASE_INSENSITIVE:0);
 
                 boolean t = (highlightFlags.indexOf('t') != -1); // Highlight types
                 boolean M = (highlightFlags.indexOf('M') != -1); // Highlight modules
