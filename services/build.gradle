@@ -62,14 +62,3 @@ compileJava {
 clean {
     delete 'src-generated'
 }
-
-idea.module {
-    sourceDirs += file(antlr4.destinationDir)
-}
-ideaModule.dependsOn antlr4GenerateGrammarSource
-
-eclipse.classpath.file.withXml { xml ->
-    def node = xml.asNode()
-    node.appendNode( 'classpathentry', [ kind: 'src', path: antlr4.destinationDir])
-}
-eclipseClasspath.dependsOn antlr4GenerateGrammarSource

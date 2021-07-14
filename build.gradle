@@ -24,8 +24,6 @@ rootProject.ext.set('jdCoreVersion', '1.1.3')
 targetCompatibility = '1.8'
 
 allprojects {
-    apply plugin: 'eclipse'
-    apply plugin: 'idea'
 
     tasks.withType(JavaCompile) {
         sourceCompatibility = targetCompatibility = '1.8'
@@ -45,12 +43,7 @@ allprojects {
     }
 }
 
-// 'cleanIdea' task extension //
-cleanIdea.doFirst {
-    delete project.name + '.iws'
-    delete 'out'
-    followSymlinks = true
-}
+
 
 // All in one JAR file //
 subprojects.each { subproject ->

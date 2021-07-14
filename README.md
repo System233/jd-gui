@@ -2,6 +2,15 @@
 
 JD-GUI, a standalone graphical utility that displays Java sources from CLASS files.
 
+## 变化
+
+添加了正则表达式搜索
+添加DEX/APK文件支持
+
+## 问题
+
+由于ByteBuffer的变动，需要用JDK8来编译项目才能兼容JRE8，但当前使用JDK11
+
 ![](https://raw.githubusercontent.com/java-decompiler/jd-gui/master/src/website/img/jd-gui.png)
 
 - Java Decompiler projects home page: [http://java-decompiler.github.io](http://java-decompiler.github.io)
