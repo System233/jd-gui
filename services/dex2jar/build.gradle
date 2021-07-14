@@ -1,0 +1,22 @@
+apply plugin: 'java'
+apply plugin: 'com.github.johnrengelman.shadow'
+dependencies {
+    compile 'org.antlr:stringtemplate:3.+'
+    compile 'com.googlecode.d2j:dex-tools'
+    shadow 'com.googlecode.d2j:dex-tools'
+    shadow 'org.antlr:stringtemplate:3.+'
+}
+
+shadowJar{
+    // configurations = [project.configurations.compileClasspath]
+    relocate 'org.objectweb.','xorg.objectweb.'
+    relocate 'org.antlr.','xorg.antlr.'
+}
+
+// jar.dependsOn shadowJar
+// runtime.dependsOn shadowJar
+// compile.dependsOn shadowJar
+
+assemble.dependsOn shadowJar
+jar.dependsOn shadowJar
+

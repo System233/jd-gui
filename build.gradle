@@ -1,11 +1,15 @@
 buildscript {
     repositories {
-        jcenter()
+        gradlePluginPortal()
+        mavenCentral()
+        google()
     }
     dependencies {
         classpath 'com.netflix.nebula:gradle-ospackage-plugin:5.3.0'    // RPM & DEB support
         classpath 'edu.sc.seis.gradle:launch4j:2.4.4'
         classpath 'net.sf.proguard:proguard-gradle:6.1.0'
+        // classpath 'gradle.plugin.com.github.jengelman.gradle.plugins:shadow:5.2.0'
+        classpath 'com.github.johnrengelman.shadow:com.github.johnrengelman.shadow.gradle.plugin:5.2.0'
     }
 }
 
@@ -32,6 +36,7 @@ allprojects {
 
     repositories {
         jcenter()
+        google()
     }
 
     configurations {
@@ -51,25 +56,18 @@ cleanIdea.doFirst {
 subprojects.each { subproject ->
     evaluationDependsOn(subproject.path)
 }
+dependencies{
+    compile project(':app')
+}
 
 jar {
-    dependsOn subprojects.tasks['jar']
+    // dependsOn subprojects.tasks['jar']
+    from {
+        configurations.compile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
 
-    // Add SPI directory
-    def tmpSpiDir = file('build/tmp/spi')
-    from tmpSpiDir
-    // Add dependencies
-    def deps = []
-    subprojects.each { subproject ->
-        from subproject.sourceSets.main.output.classesDirs
-        from subproject.sourceSets.main.output.resourcesDir
-        deps += subproject.configurations.runtime - subproject.configurations.provided
-    }
-    subprojects.each { subproject ->
-        deps -= subproject.jar.archivePath
-    }
-    deps = deps.unique().collect { it.isDirectory() ? it : zipTree(it) }
-    from deps
 
     manifest {
         attributes 'Main-Class': 'org.jd.gui.App',
@@ -77,26 +75,7 @@ jar {
                 'JD-GUI-Version': project.version,
                 'JD-Core-Version': project.jdCoreVersion
     }
-    exclude 'META-INF/licenses/**', 'META-INF/maven/**', 'META-INF/INDEX.LIST'
-    exclude '**/ErrorStrip_*.properties', '**/RSyntaxTextArea_*.properties', '**/RTextArea_*.properties'
-    exclude '**/FocusableTip_*.properties', '**/RSyntaxTextArea_License.txt'
-    duplicatesStrategy DuplicatesStrategy.EXCLUDE
-    doFirst {
-        // Create SPI directory
-        tmpSpiDir.deleteDir()
-        def tmpSpiServicesDir = file(tmpSpiDir.path + '/META-INF/services')
-        tmpSpiServicesDir.mkdirs()
-        // Copy and merge SPI config files
-        subprojects.each { subproject ->
-            def servicesDir = file(subproject.sourceSets.main.output.resourcesDir.path + '/META-INF/services')
-            if (servicesDir.exists()) {
-                servicesDir.eachFile { serviceFile ->
-                    def target = file(tmpSpiServicesDir.path + '/' + serviceFile.name)
-                    target << serviceFile.text
-                }
-            }
-        }
-    }
+
 }
 
 // Minify JAR file //
